@@ -2,6 +2,7 @@ package main;
 /**
      *======================================================================
      * Course:    CS3230 Design and Analysis of Algorithms
+
      *            Fall 2014, School of Computing, NUS
      *            Skeleton Code provided by Jonathan
      *
@@ -33,9 +34,10 @@ class skeleton
 	
 	static int[] matchedBranches, matchedInterns, branchProposeCount, branchHireLimit;
 	static int[][] branchPref, internPref, inverseIntern;
-	static ArrayList<Integer>[] matchedBranchesV2;
+	static Stack<Integer>[] matchedBranchesV2;
 	static int M, N;
     
+	@SuppressWarnings("unchecked")
 	public static void main(String[] args)
 	{
 		
@@ -55,7 +57,11 @@ class skeleton
 	    	}
 	    	
 	    
-	    	matchedBranchesV2 = (ArrayList<Integer>[]) new ArrayList[M];
+	    	matchedBranchesV2 = (Stack<Integer>[]) new Stack[M + 1];	// initialize stack
+	    	for (int j = 1; j <=M; j++) {
+	    		matchedBranchesV2[j] = new Stack<Integer>();
+	    	}
+	    	
 	    	matchedBranches = new int [M + 1]; 						// already init to 0
 	    	matchedInterns = new int [N + 1]; 						// already init to 0
 	    	branchProposeCount = new int [N + 1];
@@ -82,8 +88,10 @@ class skeleton
 		    }
 		    
 		    findStableMarriage();
-		    for (int a = 1; a <= N; a++)  {
-		    	pr.printf("%1$d %2$d\n", a, matchedBranches[a]); 
+		    for (int a = 1; a <= M; a++)  {
+		    	for (int b = 1; b <= branchHireLimit[a]; b++) {
+		    		pr.printf("%1$d %2$d\n", a, matchedBranchesV2[a].pop());
+		    	}
 		    }
 	    }
 	    
@@ -96,10 +104,12 @@ class skeleton
 	//return true iff there is a branch who is free and has not proposed anyone
 	private static boolean someBranchIsFreeAndHasNotProposed()
 	{
-		for (int i = 1; i <= N; i++) {
-			if ((matchedBranches[i] == 0) && (branchProposeCount[i] < N)) {
+		for (int i = 1; i <= M; i++) {
+			if (branchProposeCount[i] < N) {
+				if (matchedBranchesV2[i].size() < branchHireLimit[i]) {
 					return true;
-			}	
+				}
+			}
 		}
 		return false;
 	}
@@ -107,9 +117,9 @@ class skeleton
 	//return the index of the Branch who is free and has not proposed anyone
 	private static int chooseThatBranch()
 	{
-		for (int i = 1; i <= N; i++) {
-			if (matchedBranches[i] == 0) {
-				if (branchProposeCount[i] < N) {
+		for (int i = 1; i <= M; i++) {
+			if (branchProposeCount[i] < N) {
+				if (matchedBranchesV2[i].size() < branchHireLimit[i]) {
 					return i;
 				}
 			}
@@ -118,9 +128,9 @@ class skeleton
 	}
 
 	//return the index of the first intern on branch #branchIndex's list whom it has not yet proposed
-	private static int firstInternOnBranchList(int manIndex)
+	private static int firstInternOnBranchList(int branchIndex)
 	{
-		return branchPref[manIndex][1 + branchProposeCount[manIndex]];
+		return branchPref[branchIndex][1 + branchProposeCount[branchIndex]];
 	}
 
 	//return true iff intern #internIndex is free
@@ -132,7 +142,8 @@ class skeleton
 	//assign branch #branchIndex and intern #internIndex to be engaged
 	private static void assign(int branchIndex,int internIndex)
 	{
-		matchedBranches[branchIndex] = internIndex;
+		matchedBranchesV2[branchIndex].push(internIndex);
+		//matchedBranches[branchIndex] = internIndex;
 		matchedInterns[internIndex] = branchIndex;
 		branchProposeCount[branchIndex]++;
 	}
@@ -146,11 +157,20 @@ class skeleton
 	//set Man #manIndex to be free
 	private static void setFree(int branchIndex)
 	{
-		matchedBranches[branchIndex] = 0;
+		int internToSetFree = 0;
+		for (int i = 1 ; i < N; i++) {
+			if (matchedInterns[i] == branchIndex ) {
+				internToSetFree = i;
+				break;
+			}
+		}
+		
+		matchedBranchesV2[branchIndex].remove(new Integer(internToSetFree));
+		//matchedBranches[branchIndex] = 0;
 	}
 
-	//return the index of man who is the fiance of Woman #womanIndex
-	private static int fiance(int internIndex)
+	//return the index of branch who is interning of an specific intern #internIndex
+	private static int interningAt(int internIndex)
 	{
 		return matchedInterns[internIndex];
 	}
@@ -179,10 +199,10 @@ class skeleton
 				assign(freeBranch,firstIntern);
 			}
 			//else if (w prefers m to her fianceÌ m')
-			else if (prefers(firstIntern,freeBranch,fiance(firstIntern)))
+			else if (prefers(firstIntern,freeBranch,interningAt(firstIntern)))
 			{
 				//assign m and w to be engaged, and m' to be free
-				setFree(fiance(firstIntern)); assign(freeBranch,firstIntern);
+				setFree(interningAt(firstIntern)); assign(freeBranch,firstIntern);
 			//else
 			} else
 			{
