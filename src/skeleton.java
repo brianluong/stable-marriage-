@@ -1,6 +1,5 @@
-
-
 import java.io.BufferedInputStream;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +13,7 @@ class skeleton
 	static int[] matchedBranches, matchedInterns, branchProposeCount, branchHireLimit;
 	static int[][] branchPref, internPref, inverseIntern;
 	static Stack<Integer>[] matchedBranchesV2;
-	static int M, N;
+	static int M, N, internToSetFree;
     
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args)
@@ -43,33 +42,35 @@ class skeleton
 	    	
 	    	matchedBranches = new int [M + 1]; 						// already init to 0
 	    	matchedInterns = new int [N + 1]; 						// already init to 0
-	    	branchProposeCount = new int [N + 1];
-	    	branchPref = new int [N + 1][N + 1];
-		    internPref = new int [M + 1][M + 1];
-		    inverseIntern = new int[M + 1][M + 1];
+	    	branchProposeCount = new int [M + 1];
+	    	branchPref = new int [M + 1][N + 1];
+		    internPref = new int [N + 1][M + 1];
+		    inverseIntern = new int[N + 1][M + 1];
 		    
-		    for (int j = 1; j <= N; j++) {
+		    for (int j = 1; j <= M; j++) {
 		    	for (int k = 1; k <= N; k++) { 						// Saving preferences for each Branch
 		    		branchPref[j][k] = sc.nextInt();
 		    	}	
 		    }
 		    
-		    for (int j = 1; j <= M; j++) { 							// Saving preferences for each Intern
+		    for (int j = 1; j <= N; j++) { 							// Saving preferences for each Intern
 		    	for (int k = 1; k <= M; k++) {
 		    		internPref[j][k] = sc.nextInt();
 		    	}
 		    }
 		    
-		    for (int j = 1; j <= N; j++) { // Creating inverse preferences for Interns
-		    	for (int k = 1; k <= N; k++) {
+		    for (int j = 1; j <= N; j++) { 							// Creating inverse preferences for Interns
+		    	for (int k = 1; k <= M; k++) {
 		    		inverseIntern[j][internPref[j][k]] = k;
 		    	}
 		    }
 		    
 		    findStableMarriage();
 		    for (int a = 1; a <= M; a++)  {
-		    	for (int b = 1; b <= branchHireLimit[a]; b++) {
-		    		pr.printf("%1$d %2$d\n", a, matchedBranchesV2[a].pop());
+		    	int length = branchHireLimit[a];
+		    	for (int b = 0; b <= length - 1; b++) {
+		    		int intern = matchedBranchesV2[a].pop();
+		    		pr.printf("%1$d %2$d\n", a, intern);
 		    	}
 		    }
 	    }
@@ -92,7 +93,7 @@ class skeleton
 		}
 		return false;
 	}
-
+	
 	//return the index of the Branch who is free and has not proposed anyone
 	private static int chooseThatBranch()
 	{
@@ -122,7 +123,6 @@ class skeleton
 	private static void assign(int branchIndex,int internIndex)
 	{
 		matchedBranchesV2[branchIndex].push(internIndex);
-		//matchedBranches[branchIndex] = internIndex;
 		matchedInterns[internIndex] = branchIndex;
 		branchProposeCount[branchIndex]++;
 	}
@@ -130,22 +130,17 @@ class skeleton
 	//return true iff Woman #womanIndex prefers Man #firstManIndex to Man #secondManIndex
 	private static boolean prefers(int internIndex,int firstBranchIndex,int secondBranchIndex)
 	{
-		return (inverseIntern[internIndex][firstBranchIndex] < inverseIntern[internIndex][secondBranchIndex]);
+		if (inverseIntern[internIndex][firstBranchIndex] < inverseIntern[internIndex][secondBranchIndex]) {
+			internToSetFree = internIndex;
+			return true;
+		}
+		return false;
 	}
 
 	//set Man #manIndex to be free
 	private static void setFree(int branchIndex)
-	{
-		int internToSetFree = 0;
-		for (int i = 1 ; i < N; i++) {
-			if (matchedInterns[i] == branchIndex ) {
-				internToSetFree = i;
-				break;
-			}
-		}
-		
+	{	
 		matchedBranchesV2[branchIndex].remove(new Integer(internToSetFree));
-		//matchedBranches[branchIndex] = 0;
 	}
 
 	//return the index of branch who is interning of an specific intern #internIndex
@@ -175,7 +170,7 @@ class skeleton
 			if (isFree(firstIntern)) 
 			{
 				//assign m and w to be engaged
-				assign(freeBranch,firstIntern);
+				 assign(freeBranch,firstIntern);
 			}
 			//else if (w prefers m to her fianceÌ m')
 			else if (prefers(firstIntern,freeBranch,interningAt(firstIntern)))
