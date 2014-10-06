@@ -7,7 +7,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.*;
 
-class skeleton
+class skeletonForDE
 {
 	
 	static int[] matchedBranches, matchedInterns, branchProposeCount, branchHireLimit;
